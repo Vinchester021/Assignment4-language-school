@@ -26,18 +26,25 @@ It was interesting to see.
 
 Database Connection
 ![Database](docs/screenshots/DB.png)
+
 Student Operations
 ![Student Operations](docs/screenshots/SO.png)
+
 Students Sorted
 ![Sorted by Name](docs/screenshots/Ssortedbyname.png)
+
 Teacher Operations
 ![Teacher Operations](docs/screenshots/Teacheroperations.png)
+
 Course Operations
 ![Course Operations](docs/screenshots/Courseoperations.png)
+
 Enrollment Operations
 ![Enrollment](docs/screenshots/Enrollement.png)
+
 Reflection Demo – Student
 ![Reflection Student](docs/screenshots/Reflectiondemo(student).png)
+
 Reflection Demo – Teacher
 ![Reflection Teacher](docs/screenshots/Reflection(Teacher).png)
 
