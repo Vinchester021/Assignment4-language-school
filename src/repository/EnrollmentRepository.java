@@ -1,25 +1,24 @@
 package repository;
 
+import db.DatabaseConnection;
 import exception.DatabaseOperationException;
 import model.Enrollment;
-import utils.DatabaseConnection;
-
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class EnrollmentRepository {
-    private final DatabaseConnection db;
 
-    public EnrollmentRepository(DatabaseConnection db) {
-        this.db = db;
-    }
-
+    // CREATE
     public Enrollment create(Enrollment e) {
         String sql = "INSERT INTO enrollments(student_id, course_id, enrolled_at) VALUES (?,?,?) RETURNING id";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, e.getStudent().getId());
@@ -27,7 +26,9 @@ public class EnrollmentRepository {
             ps.setDate(3, Date.valueOf(e.getEnrolledAt()));
 
             try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
+                if (!rs.next()) {
+                    throw new DatabaseOperationException("Failed to create enrollment (no id returned)");
+                }
                 int id = rs.getInt("id");
                 return new Enrollment(id, e.getStudent(), e.getCourse(), e.getEnrolledAt());
             }
@@ -37,11 +38,12 @@ public class EnrollmentRepository {
         }
     }
 
+    // READ ALL
     public List<Enrollment> getAll(StudentRepository studentRepo, CourseRepository courseRepo) {
         String sql = "SELECT id, student_id, course_id, enrolled_at FROM enrollments ORDER BY id";
         List<Enrollment> list = new ArrayList<>();
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
@@ -54,7 +56,6 @@ public class EnrollmentRepository {
                 var student = studentRepo.getById(studentId);
                 var course = courseRepo.getById(courseId);
 
-                // если БД целостная, null быть не должно, но на всякий случай
                 if (student != null && course != null) {
                     list.add(new Enrollment(id, student, course, date));
                 }
@@ -66,10 +67,11 @@ public class EnrollmentRepository {
         }
     }
 
+    // READ BY ID
     public Enrollment getById(int id, StudentRepository studentRepo, CourseRepository courseRepo) {
         String sql = "SELECT id, student_id, course_id, enrolled_at FROM enrollments WHERE id=?";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);
@@ -93,10 +95,11 @@ public class EnrollmentRepository {
         }
     }
 
+    // DELETE
     public void delete(int id) {
         String sql = "DELETE FROM enrollments WHERE id=?";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);

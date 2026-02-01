@@ -1,34 +1,37 @@
-
 package repository;
 
+import db.DatabaseConnection;
 import exception.DatabaseOperationException;
 import model.Teacher;
-import utils.DatabaseConnection;
-
-import java.sql.*;
+import repository.interfaces.CrudRepository;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TeacherRepository {
-    private final DatabaseConnection db;
+public class TeacherRepository implements CrudRepository<Teacher> {
 
-    public TeacherRepository(DatabaseConnection db) {
-        this.db = db;
-    }
-
+    // CREATE
     public Teacher create(Teacher t) {
         String insertPerson = "INSERT INTO persons(name,email,role) VALUES (?,?, 'TEACHER') RETURNING id";
         String insertTeacher = "INSERT INTO teachers(person_id, specialization, salary_per_month) VALUES (?,?,?)";
 
-        try (Connection con = db.getConnection()) {
+        Connection con = DatabaseConnection.getConnection();
+
+        try {
             con.setAutoCommit(false);
 
             int personId;
             try (PreparedStatement ps1 = con.prepareStatement(insertPerson)) {
                 ps1.setString(1, t.getName());
                 ps1.setString(2, t.getEmail());
+
                 try (ResultSet rs = ps1.executeQuery()) {
-                    rs.next();
+                    if (!rs.next()) {
+                        throw new DatabaseOperationException("Failed to insert person (no id returned)");
+                    }
                     personId = rs.getInt("id");
                 }
             }
@@ -41,13 +44,24 @@ public class TeacherRepository {
             }
 
             con.commit();
-            return new Teacher(personId, t.getName(), t.getEmail(), t.getSpecialization(), t.getSalaryPerMonth());
+
+            return new Teacher(
+                    personId,
+                    t.getName(),
+                    t.getEmail(),
+                    t.getSpecialization(),
+                    t.getSalaryPerMonth()
+            );
 
         } catch (SQLException e) {
+            try { con.rollback(); } catch (SQLException ignore) {}
             throw new DatabaseOperationException("Failed to create teacher", e);
+        } finally {
+            try { con.setAutoCommit(true); } catch (SQLException ignore) {}
         }
     }
 
+    // READ ALL
     public List<Teacher> getAll() {
         String sql = """
             SELECT p.id, p.name, p.email, t.specialization, t.salary_per_month
@@ -57,7 +71,8 @@ public class TeacherRepository {
         """;
 
         List<Teacher> list = new ArrayList<>();
-        try (Connection con = db.getConnection();
+
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
@@ -77,6 +92,7 @@ public class TeacherRepository {
         }
     }
 
+    // READ BY ID
     public Teacher getById(int id) {
         String sql = """
             SELECT p.id, p.name, p.email, t.specialization, t.salary_per_month
@@ -85,7 +101,7 @@ public class TeacherRepository {
             WHERE p.id = ?
         """;
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);
@@ -107,11 +123,14 @@ public class TeacherRepository {
         }
     }
 
+    // UPDATE
     public void update(int id, Teacher t) {
         String updatePerson = "UPDATE persons SET name=?, email=? WHERE id=? AND role='TEACHER'";
         String updateTeacher = "UPDATE teachers SET specialization=?, salary_per_month=? WHERE person_id=?";
 
-        try (Connection con = db.getConnection()) {
+        Connection con = DatabaseConnection.getConnection();
+
+        try {
             con.setAutoCommit(false);
 
             try (PreparedStatement ps1 = con.prepareStatement(updatePerson)) {
@@ -131,14 +150,18 @@ public class TeacherRepository {
             con.commit();
 
         } catch (SQLException e) {
+            try { con.rollback(); } catch (SQLException ignore) {}
             throw new DatabaseOperationException("Failed to update teacher", e);
+        } finally {
+            try { con.setAutoCommit(true); } catch (SQLException ignore) {}
         }
     }
 
+    // DELETE
     public void delete(int id) {
         String sql = "DELETE FROM persons WHERE id=? AND role='TEACHER'";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);

@@ -18,12 +18,12 @@ public class CourseService {
     public Course create(Course c) {
         c.validate();
 
-        // FK must exist (teacher)
+        // FK(teacher)
         if (teacherRepo.getById(c.getTeacherId()) == null) {
             throw new ResourceNotFoundException("Teacher not found for course: teacherId=" + c.getTeacherId());
         }
 
-        // logical duplicate: (name, level)
+        // logical duplicate(name,level)
         for (Course existing : courseRepo.getAll()) {
             if (existing.getName().equalsIgnoreCase(c.getName())
                     && existing.getLevel().equalsIgnoreCase(c.getLevel())) {

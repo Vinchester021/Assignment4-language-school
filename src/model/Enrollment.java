@@ -1,7 +1,6 @@
 package model;
 
 import exception.InvalidInputException;
-
 import java.time.LocalDate;
 
 public class Enrollment implements Validatable, Identifiable {

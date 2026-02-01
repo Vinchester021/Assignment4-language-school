@@ -2,19 +2,17 @@ package repository;
 
 import exception.DatabaseOperationException;
 import model.Student;
-import utils.DatabaseConnection;
-
-import java.sql.*;
+import repository.interfaces.CrudRepository;
+import db.DatabaseConnection;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StudentRepository {
 
-    private final DatabaseConnection db;
-
-    public StudentRepository(DatabaseConnection db) {
-        this.db = db;
-    }
+public class StudentRepository implements CrudRepository<Student> {
 
     // CREATE
     public Student create(Student s) {
@@ -23,15 +21,20 @@ public class StudentRepository {
         String insertStudent =
                 "INSERT INTO students(person_id, level, discount_percent) VALUES (?,?,?)";
 
-        try (Connection con = db.getConnection()) {
-            con.setAutoCommit(false);
+        Connection con = DatabaseConnection.getConnection();
 
+        try {
+            con.setAutoCommit(false);
             int personId;
+
             try (PreparedStatement ps1 = con.prepareStatement(insertPerson)) {
                 ps1.setString(1, s.getName());
                 ps1.setString(2, s.getEmail());
+
                 try (ResultSet rs = ps1.executeQuery()) {
-                    rs.next();
+                    if (!rs.next()) {
+                        throw new DatabaseOperationException("Failed to insert person (no id returned)");
+                    }
                     personId = rs.getInt("id");
                 }
             }
@@ -44,6 +47,7 @@ public class StudentRepository {
             }
 
             con.commit();
+
             return new Student(
                     personId,
                     s.getName(),
@@ -53,7 +57,10 @@ public class StudentRepository {
             );
 
         } catch (SQLException e) {
+            try { con.rollback(); } catch (SQLException ignore) {}
             throw new DatabaseOperationException("Failed to create student", e);
+        } finally {
+            try { con.setAutoCommit(true); } catch (SQLException ignore) {}
         }
     }
 
@@ -68,7 +75,7 @@ public class StudentRepository {
 
         List<Student> list = new ArrayList<>();
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
@@ -97,7 +104,7 @@ public class StudentRepository {
                 WHERE p.id = ?
                 """;
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);
@@ -126,7 +133,9 @@ public class StudentRepository {
         String updateStudent =
                 "UPDATE students SET level=?, discount_percent=? WHERE person_id=?";
 
-        try (Connection con = db.getConnection()) {
+        Connection con = DatabaseConnection.getConnection();
+
+        try {
             con.setAutoCommit(false);
 
             try (PreparedStatement ps1 = con.prepareStatement(updatePerson)) {
@@ -146,7 +155,10 @@ public class StudentRepository {
             con.commit();
 
         } catch (SQLException e) {
+            try { con.rollback(); } catch (SQLException ignore) {}
             throw new DatabaseOperationException("Failed to update student", e);
+        } finally {
+            try { con.setAutoCommit(true); } catch (SQLException ignore) {}
         }
     }
 
@@ -154,7 +166,7 @@ public class StudentRepository {
     public void delete(int id) {
         String sql = "DELETE FROM persons WHERE id=? AND role='STUDENT'";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);
@@ -165,4 +177,3 @@ public class StudentRepository {
         }
     }
 }
-

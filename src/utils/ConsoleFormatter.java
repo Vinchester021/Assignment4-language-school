@@ -4,9 +4,9 @@ public class ConsoleFormatter {
 
     public static void title(String text) {
         System.out.println();
-        System.out.println("========================================");
+        System.out.println("============================================================");
         System.out.println("  " + text.toUpperCase());
-        System.out.println("========================================");
+        System.out.println("============================================================");
     }
 
     public static void success(String message) {

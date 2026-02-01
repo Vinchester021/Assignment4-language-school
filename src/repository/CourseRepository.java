@@ -1,24 +1,23 @@
 package repository;
 
+import db.DatabaseConnection;
 import exception.DatabaseOperationException;
 import model.Course;
-import utils.DatabaseConnection;
-
-import java.sql.*;
+import repository.interfaces.CrudRepository;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CourseRepository {
-    private final DatabaseConnection db;
+public class CourseRepository implements CrudRepository<Course> {
 
-    public CourseRepository(DatabaseConnection db) {
-        this.db = db;
-    }
-
+    // CREATE
     public Course create(Course c) {
         String sql = "INSERT INTO courses(name, level, price, teacher_id) VALUES (?,?,?,?) RETURNING id";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, c.getName());
@@ -27,7 +26,9 @@ public class CourseRepository {
             ps.setInt(4, c.getTeacherId());
 
             try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
+                if (!rs.next()) {
+                    throw new DatabaseOperationException("Failed to create course (no id returned)");
+                }
                 int id = rs.getInt("id");
                 return new Course(id, c.getName(), c.getLevel(), c.getPrice(), c.getTeacherId());
             }
@@ -37,11 +38,13 @@ public class CourseRepository {
         }
     }
 
+    // READ ALL
     public List<Course> getAll() {
         String sql = "SELECT id, name, level, price, teacher_id FROM courses ORDER BY id";
 
         List<Course> list = new ArrayList<>();
-        try (Connection con = db.getConnection();
+
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
 
@@ -61,10 +64,11 @@ public class CourseRepository {
         }
     }
 
+    // READ BY ID
     public Course getById(int id) {
         String sql = "SELECT id, name, level, price, teacher_id FROM courses WHERE id=?";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);
@@ -86,10 +90,11 @@ public class CourseRepository {
         }
     }
 
+    // UPDATE
     public void update(int id, Course c) {
         String sql = "UPDATE courses SET name=?, level=?, price=?, teacher_id=? WHERE id=?";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, c.getName());
@@ -105,10 +110,11 @@ public class CourseRepository {
         }
     }
 
+    // DELETE
     public void delete(int id) {
         String sql = "DELETE FROM courses WHERE id=?";
 
-        try (Connection con = db.getConnection();
+        try (Connection con = DatabaseConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, id);

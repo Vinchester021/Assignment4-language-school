@@ -8,7 +8,7 @@ public class Course implements Validatable, Identifiable {
     private String name;
     private String level;
     private double price;
-    private int teacherId; // FK
+    private int teacherId;
 
     public Course(int id, String name, String level, double price, int teacherId) {
         this.id = id;

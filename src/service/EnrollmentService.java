@@ -26,7 +26,6 @@ public class EnrollmentService {
         // FK checks
         Student student = studentRepo.getById(studentId);
         if (student == null) throw new ResourceNotFoundException("Student not found: id=" + studentId);
-
         Course course = courseRepo.getById(courseId);
         if (course == null) throw new ResourceNotFoundException("Course not found: id=" + courseId);
 
@@ -40,7 +39,6 @@ public class EnrollmentService {
 
         Enrollment enrollment = new Enrollment(0, student, course, LocalDate.now());
         enrollment.validate();
-
         return enrollmentRepo.create(enrollment);
     }
 

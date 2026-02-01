@@ -14,7 +14,6 @@ public class TeacherService {
 
     public Teacher create(Teacher t) {
         t.validate();
-
         for (Teacher existing : repo.getAll()) {
             if (existing.getEmail().equalsIgnoreCase(t.getEmail())) {
                 throw new DuplicateResourceException("Teacher email already exists: " + t.getEmail());
